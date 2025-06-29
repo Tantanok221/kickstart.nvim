@@ -64,17 +64,17 @@ Kickstart Guide:
     with something. It's one of my favorite Neovim features.
 
     MOST IMPORTANTLY, we provide a keymap "<space>sh" to [s]earch the [h]elp documentation,
-    which is very useful when you're not exactly sure of what you're looking for.
+    which is very useful when you're not exactly sure of what yoU'RE LOOKING FOR.
 
-  I have left several `:help X` comments throughout the init.lua
-    These are hints about where to find more information about the relevant settings,
-    plugins or Neovim features used in Kickstart.
+  I HAVE LEFT SEVERAL `:HELP X` COMMENTS THROUGHOUT THE INIT.LUA
+    THESE ARE HINTS ABOUT WHERE TO FIND MORE INFORMATION ABOUT THE RELEVANT SETTINGS,
+    PLUGINS OR NEOVIM FEATURES USED IN KICKSTART.
 
-   NOTE: Look for lines like this
+   NOTE: LOOK FOR LINES LIKE THIS
 
-    Throughout the file. These are for you, the reader, to help you understand what is happening.
-    Feel free to delete them once you know what you're doing, but they should serve as a guide
-    for when you are first encountering a few different constructs in your Neovim config.
+    THROUGHOUT THE FILE. THESE ARE FOR YOU, THE READER, TO HELP YOU UNDERSTAND WHAT IS HAPPENING.
+    FEEL FREE TO DELETE THEM ONCE YOU KNOW WHAT YOU'RE DOING, BUT THEY SHOULD SERVE AS A GUIDE
+    FOR WHEN YOU ARE FIRST ENCOUNTERING A FEW DIFFERENT CONSTRUCTS IN YOUR NEOVIM CONFIG.
 
 If you experience any errors while trying to install kickstart, run `:checkhealth` for more info.
 
@@ -974,11 +974,11 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
