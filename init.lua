@@ -354,6 +354,7 @@ require('lazy').setup({
         { '<leader>s', group = '[S]earch' },
         { '<leader>t', group = '[T]oggle' },
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
+        { '<leader>m', group = '[M]ulti Cursor', mode = { 'n', 'x' } },
         { '<leader>c', group = '[C]laude Code', mode = { 'n' } },
         { '<leader>l', group = '[L]azy Git', mode = { 'n' } },
       },
