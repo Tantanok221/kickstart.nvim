@@ -637,7 +637,240 @@ require('lazy').setup({
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
           end
+
+          -- Configure automatic hover on cursor hold
+          if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_hover, event.buf) then
+            -- Only set up hover once per buffer (prevent multiple LSP clients from creating duplicate hover logic)
+            if vim.b[event.buf].hover_setup then
+              return
+            end
+            vim.b[event.buf].hover_setup = true
+            
+            local hover_augroup = vim.api.nvim_create_augroup('kickstart-lsp-hover-' .. event.buf, { clear = true })
+            
+            -- Show hover information when cursor holds on a symbol
+            vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
+              buffer = event.buf,
+              group = hover_augroup,
+              callback = function()
+                -- Close any existing hover windows globally
+                _G.close_all_hover_windows()
+                
+                -- Store current cursor position
+                local current_win = vim.api.nvim_get_current_win()
+                local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+                
+                -- Make LSP hover request
+                local params = vim.lsp.util.make_position_params()
+                vim.lsp.buf_request(event.buf, 'textDocument/hover', params, function(err, result, ctx, config)
+                  if err or not result or not result.contents then
+                    return
+                  end
+                  
+                  -- Ensure cursor hasn't moved (prevent stale hovers)
+                  if not vim.api.nvim_win_is_valid(current_win) then
+                    return
+                  end
+                  local new_cursor_pos = vim.api.nvim_win_get_cursor(current_win)
+                  if cursor_pos[1] ~= new_cursor_pos[1] or cursor_pos[2] ~= new_cursor_pos[2] then
+                    return
+                  end
+                  
+                  -- Close any hover windows that might have opened while we were waiting
+                  _G.close_all_hover_windows()
+                  
+                  -- Parse hover content
+                  local content = result.contents
+                  if type(content) == 'table' and content.kind == 'markdown' then
+                    content = content.value
+                  elseif type(content) == 'table' then
+                    content = table.concat(vim.tbl_map(function(item)
+                      if type(item) == 'string' then
+                        return item
+                      elseif item.value then
+                        return item.value
+                      end
+                      return ''
+                    end, content), '\n')
+                  end
+                  
+                  if not content or content == '' then
+                    return
+                  end
+                  
+                  -- Detect language and clean content for syntax highlighting
+                  local filetype = 'markdown'
+                  local clean_content = content
+                  
+                  -- Check for code blocks and extract language + content
+                  local lang_patterns = {
+                    { pattern = '```typescript\n(.-)```', lang = 'typescript' },
+                    { pattern = '```javascript\n(.-)```', lang = 'javascript' },
+                    { pattern = '```ts\n(.-)```', lang = 'typescript' },
+                    { pattern = '```js\n(.-)```', lang = 'javascript' },
+                    { pattern = '```lua\n(.-)```', lang = 'lua' },
+                    { pattern = '```json\n(.-)```', lang = 'json' },
+                  }
+                  
+                  for _, lang_info in ipairs(lang_patterns) do
+                    local extracted = content:match(lang_info.pattern)
+                    if extracted then
+                      filetype = lang_info.lang
+                      clean_content = extracted
+                      break
+                    end
+                  end
+                  
+                  -- If no specific language found but has generic code blocks, try to detect from file context
+                  if filetype == 'markdown' and content:match('```\n(.-)```') then
+                    local current_buf_ft = vim.api.nvim_buf_get_option(event.buf, 'filetype')
+                    if current_buf_ft == 'typescript' or current_buf_ft == 'typescriptreact' then
+                      filetype = 'typescript'
+                    elseif current_buf_ft == 'javascript' or current_buf_ft == 'javascriptreact' then
+                      filetype = 'javascript'
+                    elseif current_buf_ft == 'lua' then
+                      filetype = 'lua'
+                    end
+                    
+                    if filetype ~= 'markdown' then
+                      clean_content = content:match('```\n(.-)```') or content
+                    end
+                  end
+                  
+                  -- Create floating window without focusing
+                  local lines = vim.split(clean_content, '\n')
+                  local width = math.min(80, math.max(unpack(vim.tbl_map(function(line)
+                    return vim.fn.strdisplaywidth(line)
+                  end, lines))))
+                  local height = math.min(20, #lines)
+                  
+                  -- Get cursor screen position
+                  local cursor_screen_row = vim.fn.winline()
+                  local cursor_screen_col = vim.fn.wincol()
+                  
+                  -- Position hover window near cursor
+                  local row = cursor_screen_row + 1
+                  local col = cursor_screen_col
+                  
+                  -- Adjust if window would go off screen
+                  local screen_height = vim.o.lines
+                  local screen_width = vim.o.columns
+                  if row + height > screen_height then
+                    row = cursor_screen_row - height - 1
+                  end
+                  if col + width > screen_width then
+                    col = screen_width - width
+                  end
+                  
+                  -- Create buffer for hover content
+                  local hover_buf = vim.api.nvim_create_buf(false, true)
+                  vim.api.nvim_buf_set_lines(hover_buf, 0, -1, false, lines)
+                  vim.api.nvim_buf_set_option(hover_buf, 'filetype', filetype)
+                  vim.api.nvim_buf_set_option(hover_buf, 'modifiable', false)
+                  
+                  -- Create floating window
+                  local hover_win = vim.api.nvim_open_win(hover_buf, false, {
+                    relative = 'editor',
+                    row = row,
+                    col = col,
+                    width = width,
+                    height = height,
+                    style = 'minimal',
+                    border = 'rounded',
+                    focusable = false,
+                    noautocmd = true,
+                  })
+                  
+                  -- Store window handle globally
+                  _G.current_hover_window = hover_win
+                  
+                  -- Apply custom highlighting after window creation
+                  vim.api.nvim_win_set_option(hover_win, 'winhl', 'Normal:HoverNormal,FloatBorder:HoverBorder')
+                  
+                  -- Ensure cursor stays in original window
+                  vim.api.nvim_set_current_win(current_win)
+                  vim.api.nvim_win_set_cursor(current_win, cursor_pos)
+                end)
+              end,
+            })
+            
+            -- Close hover window when cursor moves
+            vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertEnter', 'BufLeave' }, {
+              buffer = event.buf,
+              group = hover_augroup,
+              callback = _G.close_all_hover_windows,
+            })
+
+            -- Clean up autocmds when LSP detaches
+            vim.api.nvim_create_autocmd('LspDetach', {
+              group = vim.api.nvim_create_augroup('kickstart-lsp-hover-detach-' .. event.buf, { clear = true }),
+              callback = function(event2)
+                if event2.buf == event.buf then
+                  _G.close_all_hover_windows()
+                  vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-hover-' .. event.buf }
+                  vim.b[event.buf].hover_setup = nil
+                end
+              end,
+            })
+          end
         end,
+      })
+
+      -- Global hover window management
+      _G.current_hover_window = nil
+      
+      -- Global function to close all hover windows
+      _G.close_all_hover_windows = function()
+        -- Close tracked hover window
+        if _G.current_hover_window and vim.api.nvim_win_is_valid(_G.current_hover_window) then
+          vim.api.nvim_win_close(_G.current_hover_window, true)
+          _G.current_hover_window = nil
+        end
+        
+        -- Close any floating windows that might be hover windows (backup cleanup)
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          local config = vim.api.nvim_win_get_config(win)
+          if config.relative ~= '' then
+            local buf = vim.api.nvim_win_get_buf(win)
+            if vim.api.nvim_buf_is_valid(buf) then
+              local filetype = vim.api.nvim_buf_get_option(buf, 'filetype')
+              if filetype == 'markdown' and not vim.api.nvim_buf_get_option(buf, 'modifiable') then
+                vim.api.nvim_win_close(win, true)
+              end
+            end
+          end
+        end
+      end
+
+      -- Enhanced hover window styling with better visibility
+      local function setup_hover_highlights()
+        -- Create custom highlight groups for hover windows
+        vim.api.nvim_set_hl(0, 'HoverNormal', {
+          bg = '#1a1b26',     -- Darker background than normal
+          fg = '#c0caf5',     -- Light text
+        })
+        vim.api.nvim_set_hl(0, 'HoverBorder', {
+          fg = '#7aa2f7',     -- Blue border
+          bg = '#1a1b26',     -- Match background
+        })
+      end
+      
+      -- Set up highlights on colorscheme change
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        callback = setup_hover_highlights,
+      })
+      setup_hover_highlights() -- Apply now
+      
+      -- Configure LSP hover window styling
+      vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(vim.lsp.handlers.hover, {
+        border = 'rounded',
+        focusable = false,
+        silent = true,
+        close_events = { 'CursorMoved', 'CursorMovedI', 'BufHidden', 'InsertCharPre' },
+        style = 'minimal',
+        max_width = 80,
+        max_height = 20,
+        winhighlight = 'Normal:HoverNormal,FloatBorder:HoverBorder',
       })
 
       -- Diagnostic Config
