@@ -356,7 +356,6 @@ require('lazy').setup({
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<leader>m', group = '[M]ulti Cursor', mode = { 'n', 'x' } },
         { '<leader>c', group = '[C]laude Code', mode = { 'n' } },
-        { '<leader>f', group = '[F]ile Browser', mode = { 'n' } },
         { '<leader>l', group = '[L]azy Git', mode = { 'n' } },
       },
     },
@@ -428,7 +427,9 @@ require('lazy').setup({
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
-          file_browser = {},
+          file_browser = {
+            display_stat = { date = true },
+          },
         },
       }
 
@@ -755,12 +756,12 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>fo',
+        '<leader>f',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
         mode = '',
-        desc = 'F[o]rmat buffer',
+        desc = '[F]ormat buffer',
       },
     },
     opts = {
