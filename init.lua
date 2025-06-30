@@ -356,6 +356,7 @@ require('lazy').setup({
         { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } },
         { '<leader>m', group = '[M]ulti Cursor', mode = { 'n', 'x' } },
         { '<leader>c', group = '[C]laude Code', mode = { 'n' } },
+        { '<leader>f', group = '[F]ile Browser', mode = { 'n' } },
         { '<leader>l', group = '[L]azy Git', mode = { 'n' } },
       },
     },
@@ -427,12 +428,14 @@ require('lazy').setup({
           ['ui-select'] = {
             require('telescope.themes').get_dropdown(),
           },
+          file_browser = {},
         },
       }
 
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
+      require('telescope').load_extension 'file_browser'
 
       -- See `:help telescope.builtin`
       local builtin = require 'telescope.builtin'
@@ -752,12 +755,12 @@ require('lazy').setup({
     cmd = { 'ConformInfo' },
     keys = {
       {
-        '<leader>f',
+        '<leader>fo',
         function()
           require('conform').format { async = true, lsp_format = 'fallback' }
         end,
         mode = '',
-        desc = '[F]ormat buffer',
+        desc = 'F[o]rmat buffer',
       },
     },
     opts = {
@@ -996,6 +999,7 @@ require('lazy').setup({
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   { import = 'custom.plugins' },
+
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
