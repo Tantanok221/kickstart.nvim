@@ -586,6 +586,7 @@ require('lazy').setup({
           --  the definition of its *type*, not where it was *defined*.
           map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
 
+
           -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
           ---@param client vim.lsp.Client
           ---@param method vim.lsp.protocol.Method
@@ -661,7 +662,7 @@ require('lazy').setup({
                 local cursor_pos = vim.api.nvim_win_get_cursor(current_win)
                 
                 -- Make LSP hover request
-                local params = vim.lsp.util.make_position_params()
+                local params = vim.lsp.util.make_position_params(0, client.offset_encoding)
                 vim.lsp.buf_request(event.buf, 'textDocument/hover', params, function(err, result, ctx, config)
                   if err or not result or not result.contents then
                     return
@@ -744,29 +745,20 @@ require('lazy').setup({
                   end, lines))))
                   local height = math.min(20, #lines)
                   
-                  -- Get cursor screen position
-                  local cursor_screen_row = vim.fn.winline()
-                  local cursor_screen_col = vim.fn.wincol()
-                  
-                  -- Position hover window near cursor
-                  local row = cursor_screen_row + 1
-                  local col = cursor_screen_col
-                  
-                  -- Adjust if window would go off screen
+                  -- Position hover window in top right corner
                   local screen_height = vim.o.lines
                   local screen_width = vim.o.columns
-                  if row + height > screen_height then
-                    row = cursor_screen_row - height - 1
-                  end
-                  if col + width > screen_width then
-                    col = screen_width - width
-                  end
+                  
+                  -- Position at top right corner
+                  local row = 0
+                  local col = screen_width - width
                   
                   -- Create buffer for hover content
                   local hover_buf = vim.api.nvim_create_buf(false, true)
                   vim.api.nvim_buf_set_lines(hover_buf, 0, -1, false, lines)
                   vim.api.nvim_buf_set_option(hover_buf, 'filetype', filetype)
                   vim.api.nvim_buf_set_option(hover_buf, 'modifiable', false)
+                  
                   
                   -- Create floating window
                   local hover_win = vim.api.nvim_open_win(hover_buf, false, {
