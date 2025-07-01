@@ -357,6 +357,8 @@ require('lazy').setup({
         { '<leader>m', group = '[M]ulti Cursor', mode = { 'n', 'x' } },
         { '<leader>c', group = '[C]laude Code', mode = { 'n' } },
         { '<leader>l', group = '[L]azy Git', mode = { 'n' } },
+        { '<leader>f', group = '[F]ile operations', mode = { 'n' } },
+        { '<leader>v', group = '[V]iew/Split', mode = { 'n' } },
       },
     },
   },
@@ -1021,14 +1023,7 @@ require('lazy').setup({
     event = { 'BufWritePre' },
     cmd = { 'ConformInfo' },
     keys = {
-      {
-        '<leader>f',
-        function()
-          require('conform').format { async = true, lsp_format = 'fallback' }
-        end,
-        mode = '',
-        desc = '[F]ormat buffer',
-      },
+      -- Format keymap moved to custom/keymaps/init.lua as <leader>ff
     },
     opts = {
       notify_on_error = false,
