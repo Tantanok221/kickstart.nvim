@@ -966,6 +966,32 @@ require('lazy').setup({
             },
           },
         },
+        tailwindcss = {
+          filetypes = {
+            'html',
+            'css',
+            'scss',
+            'javascript',
+            'javascriptreact',
+            'typescript',
+            'typescriptreact',
+            'vue',
+            'svelte',
+            'ruby',
+            'erb',
+          },
+          settings = {
+            tailwindCSS = {
+              includeLanguages = {
+                elixir = "html-eex",
+                eelixir = "html-eex",
+                heex = "html-eex",
+                erb = "html",
+                ruby = "html",
+              },
+            },
+          },
+        },
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
