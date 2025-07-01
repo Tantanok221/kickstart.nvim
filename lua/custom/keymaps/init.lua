@@ -7,8 +7,8 @@ vim.keymap.set('n', '<leader>Q', ':wqa<CR>', { desc = 'Quit Neovim' })
 vim.keymap.set('n', '<leader>fb', ':Telescope file_browser<CR>', { desc = '[F]ile [B]rowser' })
 
 -- Split windows
-vim.keymap.set('n', '<leader>vv', ':vsplit<CR>', { desc = '[V]ertical split' })
-vim.keymap.set('n', '<leader>vh', ':split<CR>', { desc = '[V]ertical [H]orizontal split' })
+vim.keymap.set('n', '<leader>vv', ':split<CR>', { desc = '[V]ertical split' })
+vim.keymap.set('n', '<leader>vh', ':vsplit<CR>', { desc = '[V]ertical [H]orizontal split' })
 
 -- Navigate between splits with Ctrl + arrow keys
 vim.keymap.set('n', '<C-Left>', '<C-w>h', { desc = 'Move focus to left split' })
